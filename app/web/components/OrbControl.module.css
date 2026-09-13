@@ -1,0 +1,237 @@
+.orbContainer {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  user-select: none;
+}
+
+@media (min-width: 768px) {
+  .orbContainer {
+    width: 112px;
+    height: 112px;
+  }
+}
+
+/* Pre-rendered radial halo div for high 60fps performance without box-shadow drops */
+.halo {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  right: -16px;
+  bottom: -16px;
+  border-radius: 9999px;
+  filter: blur(24px);
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-normal) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+/* Activity Ring at +10px radius */
+.activityRing {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  pointer-events: none;
+  z-index: 1;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* Connecting rotating dashed ring */
+.activityRing[data-state="CONNECTING"] {
+  border-style: dashed;
+  animation: rotateRing 1.2s linear infinite;
+}
+
+/* Idle breathing */
+.orbContainer[data-state="IDLE"] .halo {
+  animation: breatheHalo 4s ease-in-out infinite;
+}
+
+.orbContainer[data-state="IDLE"] .activityRing {
+  animation: breatheRing 4s ease-in-out infinite;
+}
+
+/* Error Shake */
+.orbContainer[data-state="ERROR"] {
+  animation: shakeOrb 200ms ease-in-out;
+}
+
+/* Core Button */
+.coreButton {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-1);
+  z-index: 2;
+  cursor: pointer;
+  outline: none;
+  transition: transform var(--dur-instant) var(--ease-back-out),
+              background-color var(--dur-fast) var(--ease-standard),
+              border-color var(--dur-fast) var(--ease-standard);
+}
+
+/* Press micro-interaction: scale down 0.96 */
+.coreButton[data-pressed="true"] {
+  transform: scale(0.96);
+  transition-duration: 80ms;
+}
+
+/* Desktop hover scale 1.05 */
+@media (hover: hover) and (pointer: fine) {
+  .coreButton:hover:not([disabled]) {
+    transform: scale(1.05);
+  }
+  .coreButton:hover:not([disabled]) ~ .halo {
+    opacity: 0.55 !important;
+  }
+}
+
+.coreButton:focus-visible {
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--user);
+}
+
+.innerSurface {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.micIcon {
+  color: var(--text-1);
+  transition: transform var(--dur-instant) var(--ease-standard);
+}
+
+.filledMicIcon {
+  color: var(--user);
+  transform: scale(1.08);
+  transition: transform var(--dur-instant) var(--ease-standard);
+}
+
+.stopIcon {
+  color: var(--ai);
+  animation: pulseStop 1.5s ease-in-out infinite;
+}
+
+.spinnerIcon {
+  color: var(--think);
+  animation: spin 1s linear infinite;
+}
+
+/* Ripple Layer on Interruption */
+.rippleEffect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--error);
+  pointer-events: none;
+  z-index: 3;
+  animation: rippleOut 300ms var(--ease-emphasized) forwards;
+}
+
+/* Interrupt hint text */
+.interruptHint {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ai);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+  animation: fadeIn 300ms ease-out;
+}
+
+@keyframes rotateRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes breatheHalo {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.45;
+  }
+}
+
+@keyframes breatheRing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.5;
+  }
+}
+
+@keyframes shakeOrb {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes rippleOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseStop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 0.9; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halo,
+  .activityRing,
+  .orbContainer,
+  .stopIcon,
+  .spinnerIcon,
+  .rippleEffect {
+    animation: none !important;
+  }
+}
