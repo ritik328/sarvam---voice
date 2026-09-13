@@ -282,16 +282,16 @@ export default function VoiceAssistant() {
         </div>
       </header>
 
-      {/* Full-Screen Interactive Web Visualizer Stage (Canvas) */}
-      <VoiceVisualizer
-        state={state}
-        getMicAnalyser={getMicAnalyser}
-        getPlayerAnalyser={getPlayerAnalyser}
-        onStageClick={handleOrbPress}
-      />
-
       {/* Center Stage: Cinematic Headings & Time HUD */}
       <main className={styles.centerStage}>
+        {/* Compact Voice Visualizer placed directly above the session timer */}
+        <VoiceVisualizer
+          state={state}
+          getMicAnalyser={getMicAnalyser}
+          getPlayerAnalyser={getPlayerAnalyser}
+          onStageClick={handleOrbPress}
+        />
+
         <div className={styles.sessionBadge} id="sessionTimer">
           {formattedTimer}
         </div>

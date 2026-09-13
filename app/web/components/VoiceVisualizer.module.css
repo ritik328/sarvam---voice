@@ -1,11 +1,13 @@
 .visualizerStage {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 2;
+  position: relative;
+  width: 190px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: auto;
   cursor: pointer;
+  margin-bottom: 0.5rem;
 }
 
 .voiceVisualizer {
