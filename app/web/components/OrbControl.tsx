@@ -18,6 +18,7 @@ const STATE_COLORS: Record<VoiceState, string> = {
   PROCESSING: "var(--think)",
   ASSISTANT_SPEAKING: "var(--ai)",
   INTERRUPTED: "var(--error)",
+  PAUSED: "var(--warn)",
   RECONNECTING: "var(--warn)",
   ERROR: "var(--error)",
 };
@@ -30,6 +31,7 @@ const STATE_ARIA_LABELS: Record<VoiceState, string> = {
   PROCESSING: "Processing response",
   ASSISTANT_SPEAKING: "Interrupt assistant",
   INTERRUPTED: "Interrupted",
+  PAUSED: "Resume session",
   RECONNECTING: "Reconnecting",
   ERROR: "Retry voice connection",
 };

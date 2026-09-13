@@ -65,3 +65,9 @@ async def test_new_turn_creates_fresh_cancel_event():
     # After a new turn, cancel event should be fresh
     state.new_turn()
     assert not state.cancel_event.is_set()
+
+
+def test_paused_session_phase():
+    assert SessionPhase.PAUSED == "PAUSED"
+    assert "PAUSED" in [p.value for p in SessionPhase]
+

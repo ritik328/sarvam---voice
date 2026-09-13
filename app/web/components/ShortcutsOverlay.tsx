@@ -11,6 +11,7 @@ interface ShortcutsOverlayProps {
 const SHORTCUTS = [
   { key: "Space", desc: "Start / Stop speaking turn" },
   { key: "Esc", desc: "Interrupt assistant speech immediately" },
+  { key: "P", desc: "Pause / Resume active session" },
   { key: "M", desc: "Mute / Unmute microphone" },
   { key: "T", desc: "Toggle transcript auto-scroll" },
   { key: "?", desc: "Show / Hide this keyboard guide" },

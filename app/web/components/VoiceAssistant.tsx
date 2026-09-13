@@ -15,6 +15,7 @@ export default function VoiceAssistant() {
     assistantText,
     isConnected,
     isMuted,
+    isPaused,
     sessionDuration,
     turnsCount,
     ttfar,
@@ -23,6 +24,9 @@ export default function VoiceAssistant() {
     theme,
     startListening,
     stopListening,
+    pauseSession,
+    resumeSession,
+    togglePauseSession,
     interrupt,
     toggleMute,
     setTheme,
@@ -35,7 +39,6 @@ export default function VoiceAssistant() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [showPermissionGate, setShowPermissionGate] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
 
   // Settings
   const [soundFeedback, setSoundFeedback] = useState(false);
@@ -57,20 +60,14 @@ export default function VoiceAssistant() {
         return;
       }
       await startListening();
+    } else if (state === "PAUSED" || isPaused) {
+      resumeSession();
     } else if (state === "ASSISTANT_SPEAKING") {
       interrupt();
     } else {
       await stopListening();
     }
-  }, [state, permissionStatus, startListening, stopListening, interrupt]);
-
-  // Hold / Pause stream toggle
-  const handleToggleHold = useCallback(() => {
-    setIsPaused((prev) => !prev);
-    if (!isMuted) {
-      toggleMute();
-    }
-  }, [isMuted, toggleMute]);
+  }, [state, isPaused, permissionStatus, startListening, resumeSession, stopListening, interrupt]);
 
   // Reset Voice Call
   const handleReset = useCallback(async () => {
@@ -100,6 +97,8 @@ export default function VoiceAssistant() {
           setIsShortcutsOpen(false);
           setShowPermissionGate(false);
         }
+      } else if (e.key === "p" || e.key === "P") {
+        togglePauseSession();
       } else if (e.key === "m" || e.key === "M") {
         toggleMute();
       } else if (e.key === "?") {
@@ -110,7 +109,7 @@ export default function VoiceAssistant() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleOrbPress, state, interrupt, toggleMute, isHistoryOpen, isSettingsOpen, isShortcutsOpen, showPermissionGate]);
+  }, [handleOrbPress, state, interrupt, togglePauseSession, toggleMute, isHistoryOpen, isSettingsOpen, isShortcutsOpen, showPermissionGate]);
 
   // Compute Dynamic Headline & Subtext
   const isAnswering = state === "ASSISTANT_SPEAKING";
@@ -119,10 +118,10 @@ export default function VoiceAssistant() {
   let subtextLabel = "Sarvam Neural Audio Core";
   let headlineText = "How can I help you today?";
 
-  if (isPaused) {
-    statusLabel = "Audio Stream Paused";
-    subtextLabel = "Microphone on Hold";
-    headlineText = "Stream Paused";
+  if (isPaused || state === "PAUSED") {
+    statusLabel = "Session Paused • Warm Connection Kept";
+    subtextLabel = "Microphone & STT stream suspended • Zero API usage";
+    headlineText = "Session Paused • Press Resume to continue";
   } else if (state === "IDLE") {
     statusLabel = "Tap to start conversation";
     subtextLabel = "Sarvam Neural Audio Core";
@@ -361,14 +360,31 @@ export default function VoiceAssistant() {
       {/* Bottom Voice Hub Dock (Strictly Voice - No Keyboard) */}
       <footer className={styles.voiceDockContainer}>
         <div className={styles.voiceDock}>
-          {/* Mute / Hold Audio */}
+          {/* Pause / Resume Session (Keeps session warm without re-hitting API rate limits) */}
           <button
             className={`${styles.dockActionBtn} ${isPaused ? styles.dockActionBtnPaused : ""}`}
-            id="holdVoiceBtn"
-            onClick={handleToggleHold}
-            title={isPaused ? "Resume Audio Stream" : "Hold / Pause Listening"}
+            id="pauseSessionBtn"
+            onClick={togglePauseSession}
+            disabled={state === "IDLE" || state === "ERROR"}
+            title={
+              state === "IDLE" || state === "ERROR"
+                ? "Start a session to pause"
+                : isPaused
+                ? "Resume Session (P) — instant, no API rate limit hit"
+                : "Pause Session (P) — stop mic & STT stream, keep session alive"
+            }
+            aria-label={isPaused ? "Resume Session" : "Pause Session"}
           >
-            <span>{isPaused ? "▶" : "00"}</span>
+            {isPaused ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="6,4 20,12 6,20" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                <rect x="14" y="4" width="4" height="16" rx="1.5" />
+              </svg>
+            )}
           </button>
 
           {/* Primary Floating Glowing Voice Orb */}

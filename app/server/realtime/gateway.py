@@ -97,6 +97,9 @@ async def realtime_gateway(ws: WebSocket, session_id: str) -> None:
         """Continuously receive STT events and drive the pipeline."""
         nonlocal response_pipeline_task
         async for stt_event in stt.receive_events():
+            if state.phase == SessionPhase.PAUSED:
+                continue
+
             ev = stt_event.event
 
             if ev == "transcript.partial":
@@ -196,12 +199,32 @@ async def realtime_gateway(ws: WebSocket, session_id: str) -> None:
                 })
 
             elif event == "audio.chunk":
-                if not stt_connected:
+                if not stt_connected or state.phase == SessionPhase.PAUSED:
                     continue
                 data_b64 = msg.get("data", "")
                 if data_b64:
                     pcm_bytes = base64.b64decode(data_b64)
                     await stt.send_audio(pcm_bytes)
+
+            elif event == "session.pause":
+                logger.info("WS: session paused session=%s", session_id)
+                state.cancel()
+                if response_pipeline_task and not response_pipeline_task.done():
+                    response_pipeline_task.cancel()
+                state.phase = SessionPhase.PAUSED
+                await _send(ws, "session.paused", {
+                    "session_id": session_id,
+                    "turn_id": state.turn_id,
+                })
+
+            elif event == "session.resume":
+                logger.info("WS: session resumed session=%s", session_id)
+                state.new_turn()
+                state.phase = SessionPhase.LISTENING
+                await _send(ws, "session.resumed", {
+                    "session_id": session_id,
+                    "turn_id": state.turn_id,
+                })
 
             elif event == "user.interrupt":
                 logger.info("WS: user interrupt session=%s", session_id)

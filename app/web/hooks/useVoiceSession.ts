@@ -28,6 +28,7 @@ export type VoiceState =
   | "PROCESSING"
   | "ASSISTANT_SPEAKING"
   | "INTERRUPTED"
+  | "PAUSED"
   | "RECONNECTING"
   | "ERROR";
 
@@ -50,6 +51,7 @@ export interface VoiceSessionState {
   isConnected: boolean;
   sessionId: string | null;
   isMuted: boolean;
+  isPaused: boolean;
   sessionDuration: number;
   permissionStatus: "prompt" | "granted" | "denied" | "unknown";
   theme: "dark" | "light";
@@ -65,6 +67,7 @@ const INITIAL_STATE: VoiceSessionState = {
   isConnected: false,
   sessionId: null,
   isMuted: false,
+  isPaused: false,
   sessionDuration: 0,
   permissionStatus: "unknown",
   theme: "dark",
@@ -185,7 +188,10 @@ export function useVoiceSession() {
 
   // Session duration timer
   useEffect(() => {
-    const isActive = sessionState.state !== "IDLE" && sessionState.state !== "ERROR";
+    const isActive =
+      sessionState.state !== "IDLE" &&
+      sessionState.state !== "ERROR" &&
+      sessionState.state !== "PAUSED";
     if (isActive && !durationTimerRef.current) {
       durationTimerRef.current = setInterval(() => {
         setSessionState((prev) => ({
@@ -272,9 +278,18 @@ export function useVoiceSession() {
           setVS({
             state: "LISTENING",
             isConnected: true,
+            isPaused: false,
             errorMessage: null,
             errorDetail: null,
           });
+          break;
+
+        case "session.paused":
+          setVS({ state: "PAUSED", isPaused: true });
+          break;
+
+        case "session.resumed":
+          setVS({ state: "LISTENING", isPaused: false });
           break;
 
         case "connection.status": {
@@ -534,6 +549,7 @@ export function useVoiceSession() {
     setVS({
       state: "IDLE",
       isConnected: false,
+      isPaused: false,
       partialTranscript: "",
       assistantText: "",
       errorMessage: null,
@@ -541,6 +557,34 @@ export function useVoiceSession() {
     });
     latency.reset();
   }, [clearRevealTimers, latency, setVS]);
+
+  const pauseSession = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (stateRef.current === "IDLE" || stateRef.current === "ERROR") return;
+
+    wsRef.current.send(JSON.stringify({ event: "session.pause" }));
+    captureRef.current?.pause();
+    playerRef.current?.cancelAndFlush();
+    clearRevealTimers();
+    setVS({ state: "PAUSED", isPaused: true });
+  }, [clearRevealTimers, setVS]);
+
+  const resumeSession = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (stateRef.current !== "PAUSED") return;
+
+    wsRef.current.send(JSON.stringify({ event: "session.resume" }));
+    captureRef.current?.resume();
+    setVS({ state: "LISTENING", isPaused: false });
+  }, [setVS]);
+
+  const togglePauseSession = useCallback(() => {
+    if (stateRef.current === "PAUSED") {
+      resumeSession();
+    } else if (stateRef.current !== "IDLE" && stateRef.current !== "ERROR") {
+      pauseSession();
+    }
+  }, [pauseSession, resumeSession]);
 
   const interrupt = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -612,6 +656,9 @@ export function useVoiceSession() {
     turnsCount: sessionState.turns.length,
     startListening,
     stopListening,
+    pauseSession,
+    resumeSession,
+    togglePauseSession,
     interrupt,
     toggleMute,
     setTheme,

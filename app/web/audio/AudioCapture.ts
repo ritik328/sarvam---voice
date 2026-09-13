@@ -137,7 +137,32 @@ export class AudioCaptureManager {
     this._active = true;
   }
 
+  private _isPaused = false;
+
+  get isPaused(): boolean {
+    return this._isPaused;
+  }
+
+  pause(): void {
+    this._isPaused = true;
+    if (this.stream) {
+      this.stream.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    }
+  }
+
+  resume(): void {
+    this._isPaused = false;
+    if (this.stream && !this._isMuted) {
+      this.stream.getAudioTracks().forEach((track) => {
+        track.enabled = true;
+      });
+    }
+  }
+
   private emitPcmBuffer(buffer: ArrayBuffer): void {
+    if (this._isPaused) return;
     const bytes = new Uint8Array(buffer);
     let binary = "";
     const len = bytes.byteLength;
@@ -173,7 +198,7 @@ export class AudioCaptureManager {
    * Quick RMS level reader (0.0 to 1.0)
    */
   getAudioLevel(): number {
-    if (!this.analyser || this._isMuted) return 0;
+    if (!this.analyser || this._isMuted || this._isPaused) return 0;
     const data = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteTimeDomainData(data);
     let sum = 0;

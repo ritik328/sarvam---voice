@@ -49,6 +49,11 @@ const STATE_CONFIG: Record<
     color: "var(--error)",
     dotColor: "var(--error)",
   },
+  PAUSED: {
+    label: "Paused",
+    color: "var(--warn)",
+    dotColor: "var(--warn)",
+  },
   RECONNECTING: {
     label: "Reconnecting…",
     color: "var(--warn)",
